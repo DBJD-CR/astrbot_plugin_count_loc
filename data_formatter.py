@@ -28,6 +28,30 @@ class DataFormatter:
         "Vue": "🟩",  # 绿色
         "JSX": "🟦",  # 蓝色
         "TSX": "🟦",  # 蓝色
+        "Dart": "🟦",  # 蓝色
+        "Flutter": "🟦",  # 蓝色
+        "Objective-C": "🟦",  # 蓝色
+        "Scala": "🟥",  # 红色
+        "Haskell": "🟪",  # 紫色
+        "Lua": "🟦",  # 蓝色
+        "Perl": "🟦",  # 蓝色
+        "R": "🟦",  # 蓝色
+        "SQL": "🟫",  # 褐色
+        "CMake": "⬛",  # 黑色
+        "Makefile": "⬛",  # 黑色
+        "Docker ignore": "⬛",  # 黑色
+        "Dockerfile": "🐳",  # 蓝鲸/Docker专用
+        "SVG": "🟨",  # 黄色
+        "TOML": "🟫",  # 褐色
+        "INI": "🟫",  # 褐色
+        "XML": "🟧",  # 橙色
+        "Sass": "🟪",  # 紫色
+        "Less": "🟦",  # 蓝色
+        "Stylus": "🟫",  # 褐色
+        "Assembly": "🟥",  # 红色
+        "Fortran": "🟪",  # 紫色
+        "PowerShell": "🟦",  # 蓝色
+        "Batchfile": "🟩",  # 绿色
         "Other": "⬜",  # 其他/灰色
     }
 
