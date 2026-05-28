@@ -52,6 +52,7 @@ class DataFormatter:
         "Fortran": "🟪",  # 紫色
         "PowerShell": "🟦",  # 蓝色
         "Batchfile": "🟩",  # 绿色
+        "Batch": "🟩",  # 绿色 (针对API返回名称的额外映射)
         "Other": "⬜",  # 其他/灰色
     }
 
