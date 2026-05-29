@@ -66,16 +66,15 @@ class RepoClient:
             params["branch"] = branch
 
         if ignored:
-            if isinstance(ignored, str):
-                # 兼容字符串形式（大模型直接传入或用户直接传入）
-                ignored_list = [x.strip() for x in ignored.split(",") if x.strip()]
-                params["ignored"] = ",".join(ignored_list)
-            else:
-                # 兼容列表形式，统一按去首尾空格的规则处理，过滤非字符串或空值
-                ignored_list = []
-                for item in ignored:
-                    if isinstance(item, str) and item.strip():
-                        ignored_list.append(item.strip())
+            # 归一化重构逻辑，避免 if-else 的结构性重复
+            # 不论入参是单个 str（如 "a,b"）还是列表（如 ["a", "b"]），统一转为可迭代的列表提取清洗
+            raw_items = ignored.split(",") if isinstance(ignored, str) else ignored
+            ignored_list = [
+                item.strip()
+                for item in raw_items
+                if isinstance(item, str) and item.strip()
+            ]
+            if ignored_list:
                 params["ignored"] = ",".join(ignored_list)
 
         logger.info(f"[代码统计] 正在请求 {platform} 仓库: {repo_path}, 参数: {params}")
