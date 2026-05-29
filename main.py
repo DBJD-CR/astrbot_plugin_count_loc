@@ -162,7 +162,7 @@ class CountLocPlugin(Star):
         # 6. 使用群合并转发消息（转发节点）回复（若平台和协议端支持），保证群聊版面整洁！
         try:
             self_id = int(event.get_self_id())
-        except Exception:
+        except (ValueError, TypeError):
             self_id = 0
 
         try:
