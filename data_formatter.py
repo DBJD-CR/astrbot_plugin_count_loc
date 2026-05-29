@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+
+
 class DataFormatter:
     """
     负责将 API 返回的原始数据转换为易于阅读的文本列表或统计摘要，并绘制占比条。
@@ -118,7 +121,7 @@ class DataFormatter:
         data: list[dict[str, str | int]],
         repo_path: str,
         platform: str,
-        branch: str = None,
+        branch: str | None = None,
         ignored: list[str] | str | None = None,
     ) -> str:
         """
@@ -177,9 +180,6 @@ class DataFormatter:
                 ignored_str = ", ".join(ignored)
             elif isinstance(ignored, str):
                 ignored_str = ignored
-
-        # 处理查询时间（包括时区缺失的情况）
-        from datetime import datetime, timezone
 
         try:
             # 尝试获取带系统本地时区的时间

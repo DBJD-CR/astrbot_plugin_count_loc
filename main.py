@@ -41,7 +41,9 @@ class CountLocPlugin(Star):
             "  - ignored (string, 可选): 忽略的文件或文件夹路径，多个以英文逗号分隔，不填则不忽略。\n"
             "- 获得工具执行结果后，请根据得到的数据，按你的人设组织回复。\n"
         )
-        req.system_prompt = (req.system_prompt or "") + instruction
+        req.system_prompt = req.system_prompt or ""
+        if "[CountLOC" not in req.system_prompt:
+            req.system_prompt += instruction
 
     @filter.llm_tool(name="query_code_statistics")
     async def query_code_statistics_tool(
@@ -49,8 +51,8 @@ class CountLocPlugin(Star):
         event: AstrMessageEvent,
         repo_path: str,
         platform: str = "github",
-        branch: str = None,
-        ignored: str = None,
+        branch: str | None = None,
+        ignored: str | None = None,
     ) -> str:
         """获取指定 GitHub 或 GitLab 仓库的代码行数、文件数和注释行数等统计分析信息喵。
 
@@ -60,8 +62,20 @@ class CountLocPlugin(Star):
             branch(string): 要查询的特定分支（可选，不填则为默认分支）。
             ignored(string): 忽略的文件或文件夹，多个用逗号分隔（可选）。
         """
+        # 0. 参数清洗与预处理
+        if repo_path and "://" in repo_path:
+            path_parts = repo_path.split("://")[-1].split("/")
+            if len(path_parts) >= 3:
+                repo_path = "/".join(path_parts[1:3])
+        if repo_path and repo_path.endswith(".git"):
+            repo_path = repo_path[:-4]
+
+        platform = platform.lower() if platform else "github"
+        if platform not in ["github", "gitlab"]:
+            platform = "github"
+
         logger.info(
-            f"[代码统计] LLM 触发了代码统计查询，目标仓库是 {repo_path}，平台是 {platform}，分支是 {branch or '默认'}，忽略项是 {ignored or '无'}"
+            f"[代码统计] LLM 触发了代码统计查询，目标仓库是 {repo_path}，平台是 {platform}，分支是 {branch or '默认分支'}，忽略项是 {ignored or '无忽略项'}"
         )
 
         # 1. 验证参数

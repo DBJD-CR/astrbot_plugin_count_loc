@@ -55,7 +55,12 @@ class RepoClient:
                 ignored_list = [x.strip() for x in ignored.split(",") if x.strip()]
                 params["ignored"] = ",".join(ignored_list)
             else:
-                params["ignored"] = ",".join(ignored)
+                # 兼容列表形式，统一按去首尾空格的规则处理，过滤非字符串或空值
+                ignored_list = []
+                for item in ignored:
+                    if isinstance(item, str) and item.strip():
+                        ignored_list.append(item.strip())
+                params["ignored"] = ",".join(ignored_list)
 
         logger.info(f"[代码统计] 正在请求 {platform} 仓库: {repo_path}, 参数: {params}")
 
