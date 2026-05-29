@@ -13,6 +13,12 @@ class RepoClient:
     def __init__(self):
         # 官方文档限制 5 秒一次请求，因此超时时间需要设得合理一些
         self.timeout = 30.0
+        # 开启 follow_redirects=True 以处理服务器重定向 (如 301 Moved Permanently)
+        self.client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
+
+    async def close(self):
+        """关闭客户端，释放连接池资源"""
+        await self.client.aclose()
 
     async def get_repo_loc(
         self,
@@ -49,28 +55,27 @@ class RepoClient:
         logger.info(f"[代码统计] 正在请求 {platform} 仓库: {repo_path}, 参数: {params}")
 
         try:
-            # 开启 follow_redirects=True 以处理服务器重定向 (如 301 Moved Permanently)
-            async with httpx.AsyncClient(
-                timeout=self.timeout, follow_redirects=True
-            ) as client:
-                response = await client.get(self.BASE_URL, params=params)
+            response = await self.client.get(self.BASE_URL, params=params)
 
-                # 处理可能遇到的 429 速率限制错误
-                if response.status_code == 429:
-                    logger.warning(
-                        "[代码统计] 触发 API 速率限制 (429 Too Many Requests)"
-                    )
-                    return "请求过于频繁，CodeTabs API 限制每 5 秒只能请求一次喵。请稍等片刻后再试吧！"
+            # 处理可能遇到的 429 速率限制错误
+            if response.status_code == 429:
+                logger.warning("[代码统计] 触发 API 速率限制 (429 Too Many Requests)")
+                return "请求过于频繁，CodeTabs API 限制每 5 秒只能请求一次喵。请稍等片刻后再试吧！"
 
-                # 处理其他 HTTP 错误
-                response.raise_for_status()
+            # 处理其他 HTTP 错误
+            response.raise_for_status()
 
+            try:
                 data = response.json()
-                if not isinstance(data, list):
-                    logger.error(f"[代码统计] 错误的 API 响应格式: {data}")
-                    return "API 响应格式异常，请稍后再试喵！"
+            except ValueError:
+                logger.error(f"[代码统计] 解析 JSON 失败，响应内容: {response.text}")
+                return "API 响应解析失败，可能返回了非 JSON 数据喵！"
 
-                return data
+            if not isinstance(data, list):
+                logger.error(f"[代码统计] 错误的 API 响应格式: {data}")
+                return "API 响应格式异常，请稍后再试喵！"
+
+            return data
 
         except httpx.HTTPStatusError as e:
             logger.error(
