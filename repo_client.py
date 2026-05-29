@@ -25,7 +25,7 @@ class RepoClient:
         repo_path: str,
         platform: str = "github",
         branch: str | None = None,
-        ignored: list[str] | None = None,
+        ignored: list[str] | str | None = None,
     ) -> list[dict[str, str | int]] | str:
         """
         异步调用 CodeTabs API 获取仓库代码行数统计数据喵。
@@ -34,7 +34,7 @@ class RepoClient:
             repo_path: 仓库路径，如 "username/reponame"
             platform: 平台，"github" 或 "gitlab"
             branch: 分支名称
-            ignored: 忽略的文件/文件夹列表
+            ignored: 忽略的文件/文件夹列表（支持列表或逗号分隔的字符串）
 
         返回:
             List[Dict]: 语言统计数据列表，最后一项通常为 Total
@@ -50,7 +50,12 @@ class RepoClient:
             params["branch"] = branch
 
         if ignored:
-            params["ignored"] = ",".join(ignored)
+            if isinstance(ignored, str):
+                # 兼容字符串形式（大模型直接传入或用户直接传入）
+                ignored_list = [x.strip() for x in ignored.split(",") if x.strip()]
+                params["ignored"] = ",".join(ignored_list)
+            else:
+                params["ignored"] = ",".join(ignored)
 
         logger.info(f"[代码统计] 正在请求 {platform} 仓库: {repo_path}, 参数: {params}")
 
