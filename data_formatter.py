@@ -7,6 +7,9 @@ class DataFormatter:
     采用“列表卡片化”排版，完美适配移动端非等宽字体与窄屏折行问题喵。
     """
 
+    # 占比条长度的常量
+    DEFAULT_BAR_LENGTH = 15
+
     # 常用开发语言色彩条块映射定义喵 (根据语言属性映射适合的 Emoji 颜色方块)
     LANGUAGE_COLORS = {
         "Python": "🟦",  # 蓝色
@@ -66,7 +69,9 @@ class DataFormatter:
 
     @classmethod
     def _generate_percentage_bar(
-        cls, languages_info: list[tuple[str, float]], bar_length: int = 15
+        cls,
+        languages_info: list[tuple[str, float]],
+        bar_length: int = DEFAULT_BAR_LENGTH,
     ) -> str:
         """
         根据各语言所占比例动态生成文本形式的彩色渐变进度条喵。
@@ -167,7 +172,9 @@ class DataFormatter:
                 lang_percentages.append(("Other", other_pct))
 
         # 生成彩色组成条
-        color_bar = cls._generate_percentage_bar(lang_percentages, bar_length=15)
+        color_bar = cls._generate_percentage_bar(
+            lang_percentages, bar_length=cls.DEFAULT_BAR_LENGTH
+        )
 
         # 构建头部信息
         title_platform = "GitHub" if platform.lower() == "github" else "GitLab"
@@ -181,17 +188,15 @@ class DataFormatter:
             elif isinstance(ignored, str):
                 ignored_str = ignored
 
+        # 精简优化时区捕获冗余，规范获取本地化时间
         try:
             # 尝试获取带系统本地时区的时间
             now = datetime.now(timezone.utc).astimezone()
             time_str = now.strftime("%Y-%m-%d %H:%M:%S %Z")
         except Exception:
-            try:
-                # 备用：不通过 utc 转换，直接取当前时间
-                now = datetime.now()
-                time_str = now.strftime("%Y-%m-%d %H:%M:%S") + " (本地时间)"
-            except Exception as e:
-                time_str = f"获取失败 ({str(e)})"
+            # 只有在 astimezone() 失败（极罕见容器无本地时区配置）时，回退到普通本地时间
+            now = datetime.now()
+            time_str = now.strftime("%Y-%m-%d %H:%M:%S") + " (本地时间)"
 
         lines = []
         lines.append(f"📊 {title_platform} 仓库分析报告")
