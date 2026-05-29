@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from .language_colors import LANGUAGE_COLORS
+
 
 class DataFormatter:
     """
@@ -9,62 +11,6 @@ class DataFormatter:
 
     # 占比条长度的常量
     DEFAULT_BAR_LENGTH = 15
-
-    # 常用开发语言色彩条块映射定义喵 (根据语言属性映射适合的 Emoji 颜色方块)
-    LANGUAGE_COLORS = {
-        "Python": "🟦",  # 蓝色
-        "JavaScript": "🟨",  # 黄色
-        "TypeScript": "🟦",  # 蓝色
-        "TypeScript Typings": "🟦",  # 蓝色
-        "HTML": "🟥",  # 红色/橙红
-        "CSS": "🟪",  # 紫色
-        "Java": "🟫",  # 褐色
-        "C": "⬜",  # 白色/灰色
-        "C++": "🟦",  # 蓝色
-        "C#": "🟩",  # 绿色
-        "Go": "🟦",  # 蓝色
-        "Rust": "🟫",  # 褐色
-        "PHP": "🟪",  # 紫色
-        "Ruby": "🟥",  # 红色
-        "Swift": "🟧",  # 橙色
-        "Kotlin": "🟪",  # 紫色
-        "Shell": "🟩",  # 绿色
-        "Markdown": "⬛",  # 黑色
-        "YAML": "🟨",  # 黄色
-        "JSON": "🟨",  # 黄色
-        "Vue": "🟩",  # 绿色
-        "JSX": "🟦",  # 蓝色
-        "TSX": "🟦",  # 蓝色
-        "Dart": "🟦",  # 蓝色
-        "Flutter": "🟦",  # 蓝色
-        "Objective-C": "🟦",  # 蓝色
-        "Scala": "🟥",  # 红色
-        "Haskell": "🟪",  # 紫色
-        "Lua": "🟦",  # 蓝色
-        "Perl": "🟦",  # 蓝色
-        "R": "🟦",  # 蓝色
-        "SQL": "🟫",  # 褐色
-        "CMake": "⬛",  # 黑色
-        "Makefile": "⬛",  # 黑色
-        "Docker ignore": "⬛",  # 黑色
-        "Dockerfile": "🐳",  # 蓝鲸/Docker专用
-        "SVG": "🟨",  # 黄色
-        "TOML": "🟫",  # 褐色
-        "INI": "🟫",  # 褐色
-        "XML": "🟧",  # 橙色
-        "Sass": "🟪",  # 紫色
-        "Less": "🟦",  # 蓝色
-        "Stylus": "🟫",  # 褐色
-        "Assembly": "🟥",  # 红色
-        "Fortran": "🟪",  # 紫色
-        "PowerShell": "🟦",  # 蓝色
-        "Powershell": "🟦",  # 蓝色 (针对API返回名称的额外映射)
-        "Batchfile": "🟩",  # 绿色
-        "Batch": "🟩",  # 绿色 (针对API返回名称的额外映射)
-        "Systemd": "🟫",  # 褐色
-        "Other": "⬜",  # 其他/灰色
-    }
-
     DEFAULT_COLOR = "⬜"  # 默认未识别颜色方块
 
     @classmethod
@@ -115,7 +61,7 @@ class DataFormatter:
 
         # 生成彩色组成条
         for item in allocated:
-            color = cls.LANGUAGE_COLORS.get(item["name"], cls.DEFAULT_COLOR)
+            color = LANGUAGE_COLORS.get(item["name"], cls.DEFAULT_COLOR)
             bar_chars.append(color * item["count"])
 
         return "".join(bar_chars)
@@ -214,7 +160,7 @@ class DataFormatter:
             pct_desc = []
             for name, pct in lang_percentages:
                 display_name = "其他" if name == "Other" else name
-                icon = cls.LANGUAGE_COLORS.get(name, cls.DEFAULT_COLOR)
+                icon = LANGUAGE_COLORS.get(name, cls.DEFAULT_COLOR)
                 pct_desc.append(f"{icon} {display_name} {pct:.1f}%")
 
             # 每行放 2 个占比图例，以防文字堆叠在手机上换行难看喵
@@ -234,7 +180,7 @@ class DataFormatter:
             lines_code = int(lang.get("linesOfCode") or 0)
             comments = int(lang.get("comments") or 0)
 
-            icon = cls.LANGUAGE_COLORS.get(name, cls.DEFAULT_COLOR)
+            icon = LANGUAGE_COLORS.get(name, cls.DEFAULT_COLOR)
 
             # 使用列表项格式，即便在非等宽字体或手机屏幕折行时也绝不会乱，超级整齐！
             lines.append(f" 🔹{icon} {name}:")
