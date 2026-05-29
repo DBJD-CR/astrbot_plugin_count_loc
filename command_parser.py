@@ -13,7 +13,7 @@ class CommandParser:
 
     def __init__(self):
         # 匹配仓库路径的正则表达式，支持 username/reponame 的基本格式
-        self.repo_pattern = re.compile(r"([a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+)")
+        self.repo_pattern = re.compile(r"^([a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+)$")
 
     def parse_args(
         self, message_str: str
@@ -29,16 +29,21 @@ class CommandParser:
             options: 包含 branch, ignored, platform 等参数的字典
             error_msg: 错误说明，如果解析正常则为 None
         """
-        # 移去前导指令头（如 "/代码统计"、"代码统计"、"/loc" 等）
-        # 找到第一个非指令字符的位置
         clean_text = message_str.strip()
 
-        # 移除可能的前缀
-        prefixes = ["/代码统计", "代码统计", "/loc", "loc", "/count_loc", "count_loc"]
-        for p in prefixes:
-            if clean_text.lower().startswith(p):
-                clean_text = clean_text[len(p) :].strip()
-                break
+        # 使用正则表达式配合单词边界，确保只有独立的指令前缀会被剥离
+        # 例如不会把 "local test" 里的 "loc" 剥离掉喵
+        prefixes = [
+            r"/代码统计",
+            r"代码统计",
+            r"/loc",
+            r"loc",
+            r"/count_loc",
+            r"count_loc",
+        ]
+        # 拼接成类似 ^(/(代码统计|loc|count_loc)|代码统计|loc|count_loc)\b 的正则表达式
+        pattern_str = "^(" + "|".join(prefixes) + r")\b"
+        clean_text = re.sub(pattern_str, "", clean_text, flags=re.IGNORECASE).strip()
 
         if not clean_text:
             return (
@@ -62,24 +67,23 @@ class CommandParser:
         repo_path = None
         remaining_args = []
 
-        # 寻找第一个符合用户名/仓库名格式的词
+        # 仅通过一次遍历，完成已知/未知参数的分类清洗
         for word in words:
             if (
                 not repo_path
-                and self.repo_pattern.match(word)
                 and not word.startswith("-")
+                and self.repo_pattern.match(word)
             ):
                 repo_path = word
             else:
                 remaining_args.append(word)
 
+        # 如果没有找到完美的 username/reponame，则回退兼容带斜杠的单词
         if not repo_path:
-            # 兼容性处理：如果找不到完美的 username/reponame，但有一个不带 - 的词，我们也尝试把它当仓库名
             for word in words:
                 if not word.startswith("-") and "/" in word:
                     repo_path = word
                     break
-
             if repo_path:
                 remaining_args = [w for w in words if w != repo_path]
 
@@ -104,12 +108,19 @@ class CommandParser:
                 f"解析参数时遇到一点小插曲喵，已使用默认参数。({str(e)})",
             )
 
-        # 整理输出结果
+        # 整理输出结果，防范 --ignore 传入空字符串如 --ignore "" 时解析结果为空白假值
+        ignored_val = None
+        if parsed_args.ignore is not None:
+            ignored_list = [
+                x.strip() for x in parsed_args.ignore.split(",") if x.strip()
+            ]
+            # 只有当非空时才赋值，否则保留为 None 以确保类型一致
+            if ignored_list:
+                ignored_val = ignored_list
+
         options = {
             "branch": parsed_args.branch,
-            "ignored": [x.strip() for x in parsed_args.ignore.split(",") if x.strip()]
-            if parsed_args.ignore
-            else None,
+            "ignored": ignored_val,
             "platform": "gitlab" if parsed_args.gitlab else "github",
         }
 
