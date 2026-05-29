@@ -15,8 +15,18 @@ class RepoClient:
     def __init__(self):
         # 官方文档限制 5 秒一次请求，因此超时时间需要设得合理一些
         self.timeout = 30.0
-        # 开启 follow_redirects=True 以处理服务器重定向 (如 301 Moved Permanently)
-        self.client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
+        # 采用惰性加载模式，此处不再同步创建 AsyncClient
+        self.client = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """
+        获取当前异步客户端实例。
+        如果当前客户端实例尚未创建或已经被关闭，则进行惰性实例化。
+        这可以保证 httpx.AsyncClient 与发起异步请求时的 event loop 绑定，而不是与实例化 RepoClient 时的 loop 绑定喵。
+        """
+        if self.client is None or getattr(self.client, "is_closed", True):
+            self.client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
+        return self.client
 
     async def close(self):
         """关闭客户端，释放连接池资源"""
@@ -70,8 +80,11 @@ class RepoClient:
 
         logger.info(f"[代码统计] 正在请求 {platform} 仓库: {repo_path}, 参数: {params}")
 
+        # 使用惰性方法获取当前绑定的 httpx.AsyncClient 对象喵
+        client = self._get_client()
+
         try:
-            response = await self.client.get(self.BASE_URL, params=params)
+            response = await client.get(self.BASE_URL, params=params)
 
             # 处理可能遇到的 429 速率限制错误
             if response.status_code == 429:

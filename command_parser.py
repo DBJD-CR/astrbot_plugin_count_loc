@@ -31,8 +31,7 @@ class CommandParser:
         """
         clean_text = message_str.strip()
 
-        # 使用正则表达式配合单词边界，确保只有独立的指令前缀会被剥离
-        # 例如不会把 "local test" 里的 "loc" 剥离掉喵
+        # 使用非捕获的分隔符判断，确保不管是中文字符还是英文字符，都能在指令前缀紧跟空格或直接结尾时被准确剥离喵
         prefixes = [
             r"/代码统计",
             r"代码统计",
@@ -41,8 +40,8 @@ class CommandParser:
             r"/count_loc",
             r"count_loc",
         ]
-        # 拼接成类似 ^(/(代码统计|loc|count_loc)|代码统计|loc|count_loc)\b 的正则表达式
-        pattern_str = "^(" + "|".join(prefixes) + r")\b"
+        # 使用 (?:\s+|$) 作为分隔边界，它匹配“一个或多个空白字符”或“字符串结尾”，避免了 \b 无法有效在中文上触发匹配的局限
+        pattern_str = "^(" + "|".join(prefixes) + r")(?:\s+|$)"
         clean_text = re.sub(pattern_str, "", clean_text, flags=re.IGNORECASE).strip()
 
         if not clean_text:
