@@ -5,7 +5,7 @@
 <!-- markdownlint-disable MD041 -->
 # ChangeLog
 
-## [v1.0.0] - 2026-05-28
+## [v1.0.0] - 2026-05-29
 
 ## 🚀 What's Changed
 
@@ -14,6 +14,7 @@
 ### ✨ New Features (新功能)
 
 - 一条命令解析仓库代码状况，返回精心设计的文字回复 by @DBJD-CR in #2
+- 支持 LLM 函数工具调用 by @DBJD-CR in #3
 
 ### 📚 Documentation (文档)
 
@@ -32,6 +33,7 @@
 - @DBJD-CR made their first contribution in #2
 - @roomote made their first contribution in #2
 - @gemini-code-assist[bot] made their first contribution in #2
+- @sourcery-ai[bot] made their first contribution in #3
 
 **Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_count_loc/compare/v1.0.0...v1.0.0
 
