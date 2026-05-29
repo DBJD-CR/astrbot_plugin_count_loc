@@ -100,4 +100,5 @@ class CountLocPlugin(Star):
 
     async def terminate(self):
         """销毁方法"""
+        await self.repo_client.close()
         logger.info("[代码统计] 插件已被安全停用喵。")
