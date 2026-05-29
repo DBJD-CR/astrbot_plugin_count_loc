@@ -119,6 +119,7 @@ class DataFormatter:
         repo_path: str,
         platform: str,
         branch: str = None,
+        ignored: list[str] | str | None = None,
     ) -> str:
         """
         将代码行数统计数据格式化为精美的文本列表，完美适配手机等非等宽字体客户端喵。
@@ -167,11 +168,37 @@ class DataFormatter:
 
         # 构建头部信息
         title_platform = "GitHub" if platform.lower() == "github" else "GitLab"
-        branch_str = f" ({branch})" if branch else ""
+        branch_str = branch if branch else "默认分支"
+
+        # 转换 ignored 为展示字符串
+        ignored_str = "无"
+        if ignored:
+            if isinstance(ignored, list):
+                ignored_str = ", ".join(ignored)
+            elif isinstance(ignored, str):
+                ignored_str = ignored
+
+        # 处理查询时间（包括时区缺失的情况）
+        from datetime import datetime, timezone
+
+        try:
+            # 尝试获取带系统本地时区的时间
+            now = datetime.now(timezone.utc).astimezone()
+            time_str = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+        except Exception:
+            try:
+                # 备用：不通过 utc 转换，直接取当前时间
+                now = datetime.now()
+                time_str = now.strftime("%Y-%m-%d %H:%M:%S") + " (本地时间)"
+            except Exception as e:
+                time_str = f"获取失败 ({str(e)})"
 
         lines = []
-        lines.append(f"📊 [代码统计] {title_platform} 仓库分析报告")
-        lines.append(f"项目: {repo_path}{branch_str}")
+        lines.append(f"📊 {title_platform} 仓库分析报告")
+        lines.append(f"项目: {repo_path}")
+        lines.append(f"查询分支: {branch_str}")
+        lines.append(f"忽略文件/目录: {ignored_str}")
+        lines.append(f"查询时间: {time_str}")
         lines.append("=" * 30)
 
         # 语言占比展示条
