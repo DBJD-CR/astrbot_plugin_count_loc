@@ -1,6 +1,7 @@
 import astrbot.api.message_components as Comp
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
+from astrbot.api.provider import ProviderRequest
 from astrbot.api.star import Context, Star
 
 from .command_parser import CommandParser
@@ -24,6 +25,70 @@ class CountLocPlugin(Star):
     async def initialize(self):
         """异步初始化方法"""
         logger.info("[代码统计] 插件成功初始化喵！")
+
+    @filter.on_llm_request()
+    async def inject_code_statistics_tool_prompt(
+        self, event: AstrMessageEvent, req: ProviderRequest
+    ):
+        """在 LLM 请求前注入工具使用提示，提升自动调用命中率喵。"""
+        instruction = (
+            "\n\n[CountLOC (代码统计)工具使用规范]\n"
+            "- 当用户想统计某个 GitHub/GitLab 仓库的代码量、查询文件行数、或者进行代码分析等请求时，你可以调用 `query_code_statistics` 工具来获取最新的代码统计数据。\n"
+            "- 该工具包含以下参数：\n"
+            "  - repo_path (string, 必须): 格式为 用户名/仓库 或 组织名/仓库名（例如 DBJD-CR/astrbot_plugin_count_loc）。\n"
+            "  - platform (string, 可选): 仓库托管平台，默认为 github，如果用户明确提到了 GitLab，可以传入 gitlab。\n"
+            "  - branch (string, 可选): 仓库的分支名（如 main、master、dev 等），不传则使用仓库默认分支。\n"
+            "  - ignored (string, 可选): 忽略的文件或文件夹路径，多个以英文逗号分隔，不填则不忽略。\n"
+            "- 获得工具执行结果后，请根据得到的数据，按你的人设组织回复。\n"
+        )
+        req.system_prompt = (req.system_prompt or "") + instruction
+
+    @filter.llm_tool(name="query_code_statistics")
+    async def query_code_statistics_tool(
+        self,
+        event: AstrMessageEvent,
+        repo_path: str,
+        platform: str = "github",
+        branch: str = None,
+        ignored: str = None,
+    ) -> str:
+        """获取指定 GitHub 或 GitLab 仓库的代码行数、文件数和注释行数等统计分析信息喵。
+
+        Args:
+            repo_path(string): 格式为 用户名/仓库名 的仓库路径（例如 DBJD-CR/astrbot_plugin_count_loc）。
+            platform(string): 仓库托管平台，默认为 github，支持 github 或 gitlab。
+            branch(string): 要查询的特定分支（可选，不填则为默认分支）。
+            ignored(string): 忽略的文件或文件夹，多个用逗号分隔（可选）。
+        """
+        logger.info(
+            f"[代码统计] LLM 触发了代码统计查询，目标仓库是 {repo_path}，平台是 {platform}，分支是 {branch or '默认'}，忽略项是 {ignored or '无'}"
+        )
+
+        # 1. 验证参数
+        if not repo_path or "/" not in repo_path:
+            return "统计失败，原因: 请提供正确的仓库路径格式，例如 用户名/仓库名 。"
+
+        # 2. 发送请求获取数据
+        result = await self.repo_client.get_repo_loc(
+            repo_path=repo_path,
+            platform=platform,
+            branch=branch,
+            ignored=ignored,
+        )
+
+        # 3. 根据请求结果处理
+        if isinstance(result, str):
+            return f"统计失败，错误原因: {result}"
+
+        # 4. 格式化统计结果并返回给大模型
+        report_text = DataFormatter.format_loc_report(
+            data=result,
+            repo_path=repo_path,
+            platform=platform,
+            branch=branch,
+            ignored=ignored,
+        )
+        return report_text
 
     # 注册“代码统计”指令，并提供别名：codeloc, 测代码, 统计代码, loc
     @filter.command("代码统计", alias={"codeloc", "测代码", "统计代码", "loc"})
@@ -77,6 +142,7 @@ class CountLocPlugin(Star):
             repo_path=repo_path,
             platform=options.get("platform", "github"),
             branch=options.get("branch"),
+            ignored=options.get("ignored"),
         )
 
         # 6. 使用群合并转发消息（转发节点）回复（若平台和协议端支持），保证群聊版面整洁！
