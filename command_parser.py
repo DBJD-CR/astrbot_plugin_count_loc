@@ -12,8 +12,8 @@ class CommandParser:
     """
 
     def __init__(self):
-        # 匹配仓库路径的正则表达式，支持 username/reponame 的基本格式
-        self.repo_pattern = re.compile(r"^([a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+)$")
+        # 放开正则限制，支持匹配以 / 分割的任意多级嵌套目录（如 GitLab 的 group/subgroup1/subgroup2/repo）
+        self.repo_pattern = re.compile(r"^([a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)+)$")
 
     @staticmethod
     def clean_repo_path(repo_path: str | None) -> str | None:
@@ -24,10 +24,11 @@ class CommandParser:
             return repo_path
 
         # 1. 过滤协议前缀与提取主体
+        # 如果包含协议前缀，我们截取域名（如 github.com、gitlab.com）后的全部剩余多段路径，兼容 GitLab 的多层级嵌套子组喵！
         if "://" in repo_path:
             path_parts = repo_path.split("://")[-1].split("/")
             if len(path_parts) >= 3:
-                repo_path = "/".join(path_parts[1:3])
+                repo_path = "/".join(path_parts[1:])
 
         # 2. 移除 .git 结尾
         if repo_path.endswith(".git"):
@@ -80,7 +81,7 @@ class CommandParser:
             )
 
         # 我们先利用 argparse 的思想或简易拆分来解析命令行参数
-        # 提取仓库路径：通常是第一个不带 '-' 的位置参数，或是符合 username/reponame 格式的词
+        # 提取仓库路径：通常是第一个不带 '-' 的位置参数，或是符合多段格式的词
         words = clean_text.split()
 
         repo_path = None
@@ -97,7 +98,7 @@ class CommandParser:
             else:
                 remaining_args.append(word)
 
-        # 如果没有找到完美的 username/reponame，则回退兼容带斜杠的单词
+        # 如果没有找到完美的多段路径，则回退兼容带斜杠的单词
         if not repo_path:
             for word in words:
                 if not word.startswith("-") and "/" in word:
@@ -124,11 +125,18 @@ class CommandParser:
         try:
             parsed_args, unknown = parser.parse_known_args(remaining_args)
         except Exception as e:
-            # 如果解析出错，可以回退为简单的正则或默认解析，不抛出异常崩溃
+            # 捕获异常，并对原生报错信息做友好翻译，以改善对非技术用户的体验喵
+            err_str = str(e)
+            user_friendly_msg = "⚠️ 参数解析遇到了点小麻烦，请检查选项格式是否正确喵。"
+            if "expected one argument" in err_str:
+                user_friendly_msg = "⚠️ 参数输入格式有误喵！例如指定分支的 -b 或 忽略项的 -i 后面必须带上对应的值参数哦。"
+            elif "ignored" in err_str:
+                user_friendly_msg = "⚠️ 选项参数有误，请确保使用了正确的参数（如 -b 分支 / -i 忽略 / -g 使用GitLab）。"
+
             return (
                 repo_path,
                 {"branch": None, "ignored": None, "platform": "github"},
-                f"解析参数时遇到一点小插曲喵，已使用默认参数。({str(e)})",
+                user_friendly_msg,
             )
 
         # 整理输出结果，防范 --ignore 传入空字符串如 --ignore "" 时解析结果为空白假值
