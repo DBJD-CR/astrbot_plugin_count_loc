@@ -78,8 +78,10 @@ class CommandParser:
             for word in words:
                 if not word.startswith("-") and "/" in word:
                     repo_path = word
-                    remaining_args.remove(word)
                     break
+
+            if repo_path:
+                remaining_args = [w for w in words if w != repo_path]
 
         if not repo_path:
             return None, {}, "⚠️ 无法识别仓库路径，请确认是否为 用户名/仓库名 的格式喵！"
@@ -105,7 +107,7 @@ class CommandParser:
         # 整理输出结果
         options = {
             "branch": parsed_args.branch,
-            "ignored": [x.strip() for x in parsed_args.ignore.split(",")]
+            "ignored": [x.strip() for x in parsed_args.ignore.split(",") if x.strip()]
             if parsed_args.ignore
             else None,
             "platform": "gitlab" if parsed_args.gitlab else "github",
