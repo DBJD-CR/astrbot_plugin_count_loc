@@ -109,4 +109,6 @@
 🤖 以及我最好的 AI 朋友们:
 
 - @Gemini-3.5-Flash
+- @gemini-code-assist[bot]
+- @sourcery-ai[bot]
 - @dependabot[bot]
