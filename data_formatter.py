@@ -9,6 +9,7 @@ class DataFormatter:
         "Python": "🟦",  # 蓝色
         "JavaScript": "🟨",  # 黄色
         "TypeScript": "🟦",  # 蓝色
+        "TypeScript Typings": "🟦",  # 蓝色
         "HTML": "🟥",  # 红色/橙红
         "CSS": "🟪",  # 紫色
         "Java": "🟫",  # 褐色
@@ -51,8 +52,10 @@ class DataFormatter:
         "Assembly": "🟥",  # 红色
         "Fortran": "🟪",  # 紫色
         "PowerShell": "🟦",  # 蓝色
+        "Powershell": "🟦",  # 蓝色 (针对API返回名称的额外映射)
         "Batchfile": "🟩",  # 绿色
         "Batch": "🟩",  # 绿色 (针对API返回名称的额外映射)
+        "Systemd": "🟫",  # 褐色
         "Other": "⬜",  # 其他/灰色
     }
 
@@ -134,9 +137,9 @@ class DataFormatter:
                 languages.append(item)
 
         # 按代码行数降序排序
-        languages.sort(key=lambda x: x.get("linesOfCode", 0), reverse=True)
+        languages.sort(key=lambda x: int(x.get("linesOfCode") or 0), reverse=True)
 
-        total_loc = sum(lang.get("linesOfCode", 0) for lang in languages)
+        total_loc = sum(int(lang.get("linesOfCode") or 0) for lang in languages)
 
         # 1. 计算前 5 大语言（及其他）占比信息喵
         top_languages = languages[:5]
@@ -146,13 +149,15 @@ class DataFormatter:
 
         # 处理前 5 大语言
         for lang in top_languages:
-            loc = lang.get("linesOfCode", 0)
+            loc = int(lang.get("linesOfCode") or 0)
             pct = (loc / total_loc * 100) if total_loc > 0 else 0.0
             lang_percentages.append((lang.get("language"), pct))
 
         # 处理其他语言的合并
         if other_languages:
-            other_loc = sum(lang.get("linesOfCode", 0) for lang in other_languages)
+            other_loc = sum(
+                int(lang.get("linesOfCode") or 0) for lang in other_languages
+            )
             other_pct = (other_loc / total_loc * 100) if total_loc > 0 else 0.0
             if other_pct > 0:
                 lang_percentages.append(("Other", other_pct))
@@ -193,9 +198,9 @@ class DataFormatter:
             if len(name) > 20:
                 name = name[:17] + "..."
 
-            files = lang.get("files", 0)
-            lines_code = lang.get("linesOfCode", 0)
-            comments = lang.get("comments", 0)
+            files = int(lang.get("files") or 0)
+            lines_code = int(lang.get("linesOfCode") or 0)
+            comments = int(lang.get("comments") or 0)
 
             icon = cls.LANGUAGE_COLORS.get(name, cls.DEFAULT_COLOR)
 
@@ -209,11 +214,11 @@ class DataFormatter:
 
         # 追加汇总信息
         if total_data:
-            tot_files = total_data.get("files", 0)
-            tot_lines = total_data.get("lines", 0)
-            tot_blanks = total_data.get("blanks", 0)
-            tot_comments = total_data.get("comments", 0)
-            tot_code = total_data.get("linesOfCode", 0)
+            tot_files = int(total_data.get("files") or 0)
+            tot_lines = int(total_data.get("lines") or 0)
+            tot_blanks = int(total_data.get("blanks") or 0)
+            tot_comments = int(total_data.get("comments") or 0)
+            tot_code = int(total_data.get("linesOfCode") or 0)
 
             # 用千位分隔符以及 emoji 图标进行美化展示
             lines.append(f"📁 总计文件数量 : {tot_files:,} 个")
