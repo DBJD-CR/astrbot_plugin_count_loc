@@ -15,6 +15,26 @@ class CommandParser:
         # 匹配仓库路径的正则表达式，支持 username/reponame 的基本格式
         self.repo_pattern = re.compile(r"^([a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+)$")
 
+    @staticmethod
+    def clean_repo_path(repo_path: str | None) -> str | None:
+        """
+        统一对带协议前缀（如 https:// 或 http:// 等）以及 .git 结尾的仓库路径进行清洗和提纯喵。
+        """
+        if not repo_path:
+            return repo_path
+
+        # 1. 过滤协议前缀与提取主体
+        if "://" in repo_path:
+            path_parts = repo_path.split("://")[-1].split("/")
+            if len(path_parts) >= 3:
+                repo_path = "/".join(path_parts[1:3])
+
+        # 2. 移除 .git 结尾
+        if repo_path.endswith(".git"):
+            repo_path = repo_path[:-4]
+
+        return repo_path
+
     def parse_args(
         self, message_str: str
     ) -> tuple[str | None, dict[str, Any], str | None]:
@@ -86,12 +106,16 @@ class CommandParser:
             if repo_path:
                 remaining_args = [w for w in words if w != repo_path]
 
+        # 职责划分单一化，在解析到 repo_path 时，对其调用统一的静态清洗函数喵
+        if repo_path:
+            repo_path = self.clean_repo_path(repo_path)
+
         if not repo_path:
             return None, {}, "⚠️ 无法识别仓库路径，请确认是否为 用户名/仓库名 的格式喵！"
 
-        # 设置参数解析器
+        # 设置参数解析器，显式指定 add_help=False 禁用默认帮助动作，防范 SystemExit 崩溃风险
         parser = argparse.ArgumentParser(
-            description="Code LOC Counter Parser", exit_on_error=False
+            description="Code LOC Counter Parser", exit_on_error=False, add_help=False
         )
         parser.add_argument("-b", "--branch", type=str, default=None)
         parser.add_argument("-i", "--ignore", type=str, default=None)

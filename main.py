@@ -62,13 +62,8 @@ class CountLocPlugin(Star):
             branch(string): 要查询的特定分支（可选，不填则为默认分支）。
             ignored(string): 忽略的文件或文件夹，多个用逗号分隔（可选）。
         """
-        # 0. 参数清洗与预处理
-        if repo_path and "://" in repo_path:
-            path_parts = repo_path.split("://")[-1].split("/")
-            if len(path_parts) >= 3:
-                repo_path = "/".join(path_parts[1:3])
-        if repo_path and repo_path.endswith(".git"):
-            repo_path = repo_path[:-4]
+        # 0. 调用 CommandParser 统一的清洗职责进行预处理喵
+        repo_path = CommandParser.clean_repo_path(repo_path)
 
         platform = platform.lower() if platform else "github"
         if platform not in ["github", "gitlab"]:
