@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 
 from astrbot.api import logger
@@ -18,7 +20,11 @@ class RepoClient:
 
     async def close(self):
         """关闭客户端，释放连接池资源"""
-        await self.client.aclose()
+        if self.client and not getattr(self.client, "is_closed", False):
+            try:
+                await self.client.aclose()
+            except Exception as e:
+                logger.error(f"[代码统计] 释放资源时发生异常喵: {str(e)}")
 
     async def get_repo_loc(
         self,
@@ -97,6 +103,9 @@ class RepoClient:
         except httpx.RequestError as e:
             logger.error(f"[代码统计] 网络请求异常: {str(e)}")
             return f"网络连接异常，无法访问 API 喵。错误详情: {str(e)}"
+        except asyncio.CancelledError:
+            # 显式重新抛出 CancelledError 异常，避免在异步环境协程被取消时异常被静默吞没喵
+            raise
         except Exception as e:
             logger.error(f"[代码统计] 未知异常: {str(e)}")
             return f"发生未知错误喵: {str(e)}"
